@@ -1,4 +1,4 @@
-### v1.8.1 (19-Jun-2021)
+### v2.0.1 (19-Jun-2021)
 
 - Added API shazam incl in settings
 - Added API vagalume incl in settings

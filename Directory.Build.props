@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Company>VandenboschVincent</Company>
     <Copyright>Copyright (C) Vincent Vandenbosch</Copyright>
     <LangVersion>preview</LangVersion>
