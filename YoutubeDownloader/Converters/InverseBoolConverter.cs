@@ -9,7 +9,7 @@ namespace YoutubeDownloader.Converters
     {
         public static InverseBoolConverter Instance { get; } = new();
 
-        public object Convert(object? value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
                 return !boolValue;
@@ -17,7 +17,7 @@ namespace YoutubeDownloader.Converters
             return default(bool);
         }
 
-        public object ConvertBack(object? value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
                 return !boolValue;

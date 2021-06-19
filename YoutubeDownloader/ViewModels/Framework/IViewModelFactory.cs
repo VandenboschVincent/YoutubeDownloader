@@ -15,5 +15,7 @@ namespace YoutubeDownloader.ViewModels.Framework
         MessageBoxViewModel CreateMessageBoxViewModel();
 
         SettingsViewModel CreateSettingsViewModel();
+
+        ConfirmTagsViewModel CreateConfirmTagsViewModel();
     }
 }

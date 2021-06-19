@@ -10,7 +10,7 @@
     xmlns:s="https://github.com/canton7/Stylet"
     xmlns:viewModels="clr-namespace:YoutubeDownloader.ViewModels"
     Width="700"
-    Height="700"
+    Height="800"
     d:DataContext="{d:DesignInstance Type=viewModels:RootViewModel}"
     Background="{DynamicResource MaterialDesignBackground}"
     FocusManager.FocusedElement="{Binding ElementName=QueryTextBox}"

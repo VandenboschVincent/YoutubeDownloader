@@ -29,11 +29,11 @@ namespace YoutubeDownloader.ViewModels
 
         public IProgressManager ProgressManager { get; } = new ProgressManager();
 
-        public bool IsBusy { get; private set; }
+        public static bool IsBusy { get; set; }
 
         public bool IsProgressIndeterminate { get; private set; }
 
-        public string? Query { get; set; }
+        public string Query { get; set; }
 
         public BindableCollection<DownloadViewModel> Downloads { get; } = new();
 
@@ -257,11 +257,15 @@ namespace YoutubeDownloader.ViewModels
             Downloads.Remove(download);
         }
 
-        public void RemoveInactiveDownloads() =>
+        public void RemoveInactiveDownloads()
+        {
             Downloads.RemoveWhere(d => !d.IsActive);
+        }
 
-        public void RemoveSuccessfulDownloads() =>
+        public void RemoveSuccessfulDownloads()
+        {
             Downloads.RemoveWhere(d => d.IsSuccessful);
+        }
 
         public void RestartFailedDownloads()
         {

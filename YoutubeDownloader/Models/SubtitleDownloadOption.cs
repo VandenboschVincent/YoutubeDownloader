@@ -25,7 +25,7 @@ namespace YoutubeDownloader.Models
             return StringComparer.Ordinal.Equals(TrackInfo.Url, other.TrackInfo.Url);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;

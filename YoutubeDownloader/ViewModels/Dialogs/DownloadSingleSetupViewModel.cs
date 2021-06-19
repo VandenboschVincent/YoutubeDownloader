@@ -27,9 +27,9 @@ namespace YoutubeDownloader.ViewModels.Dialogs
         public IReadOnlyList<SubtitleDownloadOption> AvailableSubtitleOptions { get; set; } =
             Array.Empty<SubtitleDownloadOption>();
 
-        public VideoDownloadOption? SelectedVideoOption { get; set; }
+        public VideoDownloadOption SelectedVideoOption { get; set; }
 
-        public SubtitleDownloadOption? SelectedSubtitleOption { get; set; }
+        public SubtitleDownloadOption SelectedSubtitleOption { get; set; }
 
         public bool ShouldDownloadSubtitles { get; set; }
 

@@ -140,9 +140,7 @@ namespace YoutubeDownloader.Services
 
             if (bestAudioOnlyStreamInfo is not null)
             {
-                options.Add(new VideoDownloadOption("mp3", "Audio", bestAudioOnlyStreamInfo));
-                options.Add(new VideoDownloadOption("ogg", "Audio", bestAudioOnlyStreamInfo));
-                options.Add(new VideoDownloadOption("wav", "Audio", bestAudioOnlyStreamInfo));
+                Formats.MusicFormats.ForEach(t => options.Add(new VideoDownloadOption(t, "Audio", bestAudioOnlyStreamInfo)));
             }
 
             // Drop excluded formats
@@ -165,7 +163,7 @@ namespace YoutubeDownloader.Services
                 .ToArray();
         }
 
-        public async Task<VideoDownloadOption?> TryGetBestVideoDownloadOptionAsync(
+        public async Task<VideoDownloadOption> TryGetBestVideoDownloadOptionAsync(
             string videoId,
             string format,
             VideoQualityPreference qualityPreference)
@@ -174,10 +172,7 @@ namespace YoutubeDownloader.Services
 
             // TODO: generalize supported formats
             // Short-circuit for audio-only formats
-            if (string.Equals(format, "mp3", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(format, "ogg", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(format, "wav", StringComparison.OrdinalIgnoreCase))
-
+            if (Formats.MusicFormats.Contains(format))
             {
                 return options.FirstOrDefault(o => string.Equals(o.Format, format, StringComparison.OrdinalIgnoreCase));
             }

@@ -1,6 +1,14 @@
-### v1.8.1 (21-May-2021)
+### v1.8.1 (19-Jun-2021)
 
-- Fixed various YouTube-related issues. Updated to YoutubeExplode v6.0.1.
+- Added API shazam incl in settings
+- Added API vagalume incl in settings
+- Added AutoRename function
+- Task Queue instead of wait
+- Review and Update Tags afterwards
+- Screen waiting before other pop-up screens finished
+- MusicFormats in class
+- Update NAudio to 2.0.1
+- Added BPM to tags (only 32bit)
 
 ### v1.8 (18-Apr-2021)
 

@@ -5,11 +5,11 @@ namespace YoutubeDownloader.ViewModels.Framework
 {
     public abstract class DialogScreen<T> : PropertyChangedBase
     {
-        public T? DialogResult { get; private set; }
+        public T DialogResult { get; private set; }
 
-        public event EventHandler? Closed;
+        public event EventHandler Closed;
 
-        public void Close(T? dialogResult = default)
+        public void Close(T dialogResult = default)
         {
             DialogResult = dialogResult;
             Closed?.Invoke(this, EventArgs.Empty);

@@ -17,6 +17,8 @@ namespace YoutubeDownloader.Services
 
         public bool ShouldInjectTags { get; set; } = true;
 
+        public bool ManualCheckTags { get; set; } = false;
+
         public bool AutoRenameFile { get; set; } = true;
 
         public bool ShouldSkipExistingFiles { get; set; }

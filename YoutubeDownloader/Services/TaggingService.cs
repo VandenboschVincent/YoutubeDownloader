@@ -55,7 +55,7 @@ namespace YoutubeDownloader.Services
             }
         }
 
-        private async Task<JToken?> TryGetMusicBrainzTagsJsonAsync(
+        private async Task<JToken> TryGetMusicBrainzTagsJsonAsync(
             string artist,
             string title,
             CancellationToken cancellationToken = default)
@@ -119,46 +119,46 @@ namespace YoutubeDownloader.Services
             }
         }
 
-        private bool TryExtractArtistAndTitle(
-            string videoTitle,
-            out string? artist,
-            out string? title)
-        {
-            // Get rid of common rubbish in music video titles
-            videoTitle = videoTitle.Replace("(official video)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(official lyric video)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(official music video)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(official audio)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(official)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(lyric video)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(lyrics)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(acoustic video)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(acoustic)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(live)", "", StringComparison.OrdinalIgnoreCase);
-            videoTitle = videoTitle.Replace("(animated video)", "", StringComparison.OrdinalIgnoreCase);
+        //private bool TryExtractArtistAndTitle(
+        //    string videoTitle,
+        //    out string artist,
+        //    out string title)
+        //{
+        //    // Get rid of common rubbish in music video titles
+        //    videoTitle = videoTitle.Replace("(official video)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(official lyric video)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(official music video)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(official audio)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(official)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(lyric video)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(lyrics)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(acoustic video)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(acoustic)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(live)", "", StringComparison.OrdinalIgnoreCase);
+        //    videoTitle = videoTitle.Replace("(animated video)", "", StringComparison.OrdinalIgnoreCase);
 
-            // Split by common artist/title separator characters
-            var split = videoTitle.Split(new[] {" - ", " ~ ", " — ", " – "}, StringSplitOptions.RemoveEmptyEntries);
+        //    // Split by common artist/title separator characters
+        //    var split = videoTitle.Split(new[] {" - ", " ~ ", " — ", " – "}, StringSplitOptions.RemoveEmptyEntries);
 
-            // Extract artist and title
-            if (split.Length >= 2)
-            {
-                artist = split[0].Trim();
-                title = split[1].Trim();
-                return true;
-            }
+        //    // Extract artist and title
+        //    if (split.Length >= 2)
+        //    {
+        //        artist = split[0].Trim();
+        //        title = split[1].Trim();
+        //        return true;
+        //    }
 
-            if (split.Length == 1)
-            {
-                artist = null;
-                title = split[0].Trim();
-                return true;
-            }
+        //    if (split.Length == 1)
+        //    {
+        //        artist = null;
+        //        title = split[0].Trim();
+        //        return true;
+        //    }
 
-            artist = null;
-            title = null;
-            return false;
-        }
+        //    artist = null;
+        //    title = null;
+        //    return false;
+        //}
 
         private async Task<string> InjectVideoTagsAsync(
             IVideo video,
@@ -183,20 +183,29 @@ namespace YoutubeDownloader.Services
             return filePath;
         }
 
-        private async Task<string> InjectAudioTagsAsync(
+        public async Task<string> InjectAudioTagsAsync(
             IVideo video,
             string filePath,
             string format,
             bool AutoRename,
             List<string> shazamapikeys,
             List<string> vagalumeapikeys,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string forcetitle = null,
+            string forceartist = null)
         {
             // 4 requests per second
             await MaintainRateLimitAsync(TimeSpan.FromSeconds(1.0 / 4), cancellationToken);
 
             FileInfo info = new FileInfo(filePath);
             string filetitle = info.Name;
+            bool forced = false;
+
+            if (!string.IsNullOrWhiteSpace(forcetitle) || !string.IsNullOrWhiteSpace(forceartist))
+            {
+                filetitle = $"{forceartist} - {forcetitle}";
+                forced = true;
+            }
 
             if (!ShazamMusicInfo.TryExtractArtistAndTitle(filetitle.Replace(info.Extension, "")
                 , shazamapikeys
@@ -208,31 +217,35 @@ namespace YoutubeDownloader.Services
                 return filePath;
 
             bool somethingfound = false;
+            
             var normalizedartist = RemoveDiacritics(artist);
             var normalizedtitle = RemoveDiacritics(title);
-
-            foreach (var item in filetitle.Replace(info.Extension, "").Split(" "))
+            if (!forced)
             {
-                if (string.IsNullOrEmpty(item) || item.Length <= 3)
-                    continue;
-
-                var normalizeditem = RemoveDiacritics(item);
-
-                if (string.Equals(normalizeditem, normalizedartist, StringComparison.OrdinalIgnoreCase))
+                foreach (var item in filetitle.Replace(info.Extension, "").Split(" "))
                 {
-                    somethingfound = true;
-                    break;
-                }
-                if (string.Equals(normalizeditem, normalizedtitle, StringComparison.OrdinalIgnoreCase))
-                {
-                    somethingfound = true;
-                    break;
+                    if (string.IsNullOrEmpty(item) || item.Length <= 3)
+                        continue;
+
+                    var normalizeditem = RemoveDiacritics(item);
+
+                    if (string.Equals(normalizeditem, normalizedartist, StringComparison.OrdinalIgnoreCase))
+                    {
+                        somethingfound = true;
+                        break;
+                    }
+                    if (string.Equals(normalizeditem, normalizedtitle, StringComparison.OrdinalIgnoreCase))
+                    {
+                        somethingfound = true;
+                        break;
+                    }
                 }
             }
 
             if (!somethingfound
                 && (!filetitle.Contains(normalizedartist) || normalizedartist.Length <= 3)
                 && (!filetitle.Contains(normalizedtitle) || normalizedtitle.Length <= 3)
+                && !forced
                 )
             {
                 var _picture = await TryGetPictureAsync(video, cancellationToken);
@@ -246,6 +259,12 @@ namespace YoutubeDownloader.Services
                 _file.Save();
                 _file.Dispose();
                 return filePath;
+            }
+
+            if (forced)
+            {
+                artist = forceartist;
+                title = forcetitle;
             }
 
             var tagsJson = await TryGetMusicBrainzTagsJsonAsync(artist!, title!, cancellationToken);
@@ -266,13 +285,13 @@ namespace YoutubeDownloader.Services
             if (!Environment.Is64BitProcess)
             {
                 double bitrate = 44100;
-                if (string.Equals(format, "wav", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(format, Formats.wav, StringComparison.OrdinalIgnoreCase))
                     using (var reader = new WaveFileReader(filePath))
                     {
                         bitrate = reader.WaveFormat.AverageBytesPerSecond * 8;
                         bitrate = bitrate / 1000;
                     }
-                if (string.Equals(format, "mp3", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(format, Formats.mp3, StringComparison.OrdinalIgnoreCase))
                     using (var reader = new Mp3FileReader(filePath))
                     {
                         bitrate = reader.WaveFormat.AverageBytesPerSecond * 8;
@@ -302,11 +321,12 @@ namespace YoutubeDownloader.Services
             }
 
             string newfilepath = Path.Combine(info.Directory.FullName, $"{newfilename}{info.Extension}");
-            if (!System.IO.File.Exists(newfilepath))
+            if ((!System.IO.File.Exists(newfilepath) || forced) && AutoRename)
             {
                 info.MoveTo(Path.Combine(info.Directory.FullName, $"{newfilename}{info.Extension}"), true);
                 return newfilepath;
             }
+
             return filePath;
         }
 
@@ -319,14 +339,11 @@ namespace YoutubeDownloader.Services
             List<string> vagalumeapikeys,
             CancellationToken cancellationToken = default)
         {
-            if (string.Equals(format, "mp4", StringComparison.OrdinalIgnoreCase))
+            if (Formats.VideoFormats.Contains(format))
             {
                 return await InjectVideoTagsAsync(video, filePath, cancellationToken);
             }
-            else if (
-                string.Equals(format, "mp3", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(format, "wav", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(format, "ogg", StringComparison.OrdinalIgnoreCase))
+            else if (Formats.MusicFormats.Contains(format))
             {
                 return await InjectAudioTagsAsync(video, filePath, format, AutoRename, shazamapikeys, vagalumeapikeys, cancellationToken);
             }

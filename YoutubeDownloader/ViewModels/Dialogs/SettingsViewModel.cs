@@ -28,6 +28,12 @@ namespace YoutubeDownloader.ViewModels.Dialogs
             set => _settingsService.ShouldInjectTags = value;
         }
 
+        public bool ManualCheckTags
+        {
+            get => _settingsService.ManualCheckTags;
+            set => _settingsService.ManualCheckTags = value;
+        }
+
         public bool AutoRenameFile
         {
             get => _settingsService.AutoRenameFile;

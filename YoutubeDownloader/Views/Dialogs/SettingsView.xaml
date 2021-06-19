@@ -7,11 +7,10 @@
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:s="https://github.com/canton7/Stylet"
-    Height="550"
-    MinWidth="300"
-    MinHeight="550"
+    MinWidth="400"
+    MinHeight="600"
     d:DataContext="{d:DesignInstance Type=dialogs:SettingsViewModel}"
-    d:DesignWidth="800"
+    d:DesignWidth="400"
     Style="{DynamicResource MaterialDesignRoot}"
     mc:Ignorable="d">
     <StackPanel>
@@ -58,6 +57,26 @@
                 Margin="16,8"
                 DockPanel.Dock="Right"
                 IsChecked="{Binding AutoRenameFile}" />
+        </DockPanel>
+
+        <!--  ManualCheckTags  -->
+        <DockPanel Background="Transparent" LastChildFill="False">
+            <DockPanel.ToolTip>
+                <TextBlock>
+                    <Run Text="Let's you check tags/artist/song found." />
+                    <LineBreak />
+                    <Run FontWeight="SemiBold" Text="Info:" />
+                    <Run Text="Does only for music files." />
+                </TextBlock>
+            </DockPanel.ToolTip>
+            <TextBlock
+                Margin="16,8"
+                DockPanel.Dock="Left"
+                Text="ManualCheckTags" />
+            <ToggleButton
+                Margin="16,8"
+                DockPanel.Dock="Right"
+                IsChecked="{Binding ManualCheckTags}" />
         </DockPanel>
 
         <!--  Dark mode  -->

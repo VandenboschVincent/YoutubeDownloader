@@ -10,38 +10,45 @@ namespace YoutubeDownloader.ViewModels.Framework
     public class DialogManager
     {
         private readonly IViewManager _viewManager;
-
         public DialogManager(IViewManager viewManager)
         {
             _viewManager = viewManager;
         }
 
-        public async Task<T?> ShowDialogAsync<T>(DialogScreen<T> dialogScreen)
+        public async Task<T> ShowDialogAsync<T>(DialogScreen<T> dialogScreen)
         {
-            // Get the view that renders this viewmodel
-            var view = _viewManager.CreateAndBindViewForModelIfNecessary(dialogScreen);
-
-            // Set up event routing that will close the view when called from viewmodel
-            void OnDialogOpened(object? openSender, DialogOpenedEventArgs openArgs)
+            try
             {
-                // Delegate to close the dialog and unregister event handler
-                void OnScreenClosed(object? closeSender, EventArgs closeArgs)
+                RootViewModel.IsBusy = true;
+                // Get the view that renders this viewmodel
+                var view = _viewManager.CreateAndBindViewForModelIfNecessary(dialogScreen);
+
+                // Set up event routing that will close the view when called from viewmodel
+                void OnDialogOpened(object openSender, DialogOpenedEventArgs openArgs)
                 {
-                    openArgs.Session.Close();
-                    dialogScreen.Closed -= OnScreenClosed;
+                    // Delegate to close the dialog and unregister event handler
+                    void OnScreenClosed(object closeSender, EventArgs closeArgs)
+                    {
+                        openArgs.Session.Close();
+                        dialogScreen.Closed -= OnScreenClosed;
+                    }
+
+                    dialogScreen.Closed += OnScreenClosed;
                 }
 
-                dialogScreen.Closed += OnScreenClosed;
+                // Show view
+                await DialogHost.Show(view, OnDialogOpened);
             }
-
-            // Show view
-            await DialogHost.Show(view, OnDialogOpened);
+            finally
+            {
+                RootViewModel.IsBusy = false;
+            }
 
             // Return the result
             return dialogScreen.DialogResult;
         }
 
-        public string? PromptSaveFilePath(string filter = "All files|*.*", string defaultFilePath = "")
+        public string PromptSaveFilePath(string filter = "All files|*.*", string defaultFilePath = "")
         {
             // Create dialog
             var dialog = new VistaSaveFileDialog
@@ -56,7 +63,7 @@ namespace YoutubeDownloader.ViewModels.Framework
             return dialog.ShowDialog() == true ? dialog.FileName : null;
         }
 
-        public string? PromptDirectoryPath(string defaultDirPath = "")
+        public string PromptDirectoryPath(string defaultDirPath = "")
         {
             // Create dialog
             var dialog = new VistaFolderBrowserDialog

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using YoutubeExplode.Videos;
@@ -19,7 +20,7 @@ namespace YoutubeDownloader.Utils
             string template,
             IVideo video,
             string format,
-            string? number = null)
+            string number = null)
         {
             var result = template;
 
@@ -30,76 +31,78 @@ namespace YoutubeDownloader.Utils
             // Get rid of common rubbish in music video titles
             result = result.Replace("\"", "", StringComparison.OrdinalIgnoreCase);
 
-            result = result.Replace("(official video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(official lyric video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(official music video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(official hd video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(official audio)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(orange version)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(official)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(lyric video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(lyrics)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(acoustic video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(acoustic)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(live)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(animated video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(video version)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(director's cut)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(original video)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(original video with subtitles)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(extended version)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(us version)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(closed captioned)", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("(edited)", "", StringComparison.OrdinalIgnoreCase);
+            if (Formats.MusicFormats.Contains(format))
+            {
+                result = result.Replace("(official video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(official lyric video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(official music video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(official hd video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(official audio)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(orange version)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(official)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(lyric video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(lyrics)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(acoustic video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(acoustic)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(live)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(animated video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(video version)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(director's cut)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(original video)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(original video with subtitles)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(extended version)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(us version)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(closed captioned)", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("(edited)", "", StringComparison.OrdinalIgnoreCase);
 
-            result = Regex.Replace(result, "(\\[.*\\])|(\".*\")|('.*')|(\\(.*\\))", "");
+                result = Regex.Replace(result, "(\\[.*\\])|(\".*\")|('.*')|(\\(.*\\))", "");
 
-            //result = result.Replace("[official video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[official lyric video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[official music video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[official hd video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[official audio]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[orange version]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[official]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[lyric video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[lyrics]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[acoustic video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[acoustic]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[live]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[animated video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[video version]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[director's cut]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[original video]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[original video with subtitles]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[extended version]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[us version]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[closed captioned]", "", StringComparison.OrdinalIgnoreCase);
-            //result = result.Replace("[edited]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[official video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[official lyric video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[official music video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[official hd video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[official audio]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[orange version]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[official]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[lyric video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[lyrics]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[acoustic video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[acoustic]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[live]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[animated video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[video version]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[director's cut]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[original video]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[original video with subtitles]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[extended version]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[us version]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[closed captioned]", "", StringComparison.OrdinalIgnoreCase);
+                //result = result.Replace("[edited]", "", StringComparison.OrdinalIgnoreCase);
 
-            result = result.Replace("official video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("official lyric video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("official music video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("official hd video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("official audio", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("orange version", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("lyric video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("acoustic video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("animated video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("video version", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("director's cut", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("original video", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("original video with subtitles", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("extended version", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("us version", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("closed captioned", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("lyrics", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("official video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("official lyric video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("official music video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("official hd video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("official audio", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("orange version", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("lyric video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("acoustic video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("animated video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("video version", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("director's cut", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("original video", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("original video with subtitles", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("extended version", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("us version", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("closed captioned", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("lyrics", "", StringComparison.OrdinalIgnoreCase);
 
-            result = result.Replace("__", "", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("   ", " ", StringComparison.OrdinalIgnoreCase);
-            result = result.Replace("  ", " ", StringComparison.OrdinalIgnoreCase);
-
+                result = result.Replace("__", "", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("   ", " ", StringComparison.OrdinalIgnoreCase);
+                result = result.Replace("  ", " ", StringComparison.OrdinalIgnoreCase);
+            }
 
             result = RemoveEmoticon(result);
 

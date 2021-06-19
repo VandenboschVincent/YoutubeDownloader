@@ -24,7 +24,7 @@ namespace YoutubeDownloader.ViewModels.Components
         private readonly DownloadService _downloadService;
         private readonly TaggingService _taggingService;
 
-        private CancellationTokenSource? _cancellationTokenSource;
+        private CancellationTokenSource _cancellationTokenSource;
 
         public IVideo Video { get; set; } = default!;
 
@@ -36,13 +36,13 @@ namespace YoutubeDownloader.ViewModels.Components
 
         public VideoQualityPreference QualityPreference { get; set; } = VideoQualityPreference.Maximum;
 
-        public VideoDownloadOption? VideoOption { get; set; }
+        public VideoDownloadOption VideoOption { get; set; }
 
-        public SubtitleDownloadOption? SubtitleOption { get; set; }
+        public SubtitleDownloadOption SubtitleOption { get; set; }
 
-        public IProgressManager? ProgressManager { get; set; }
+        public IProgressManager ProgressManager { get; set; }
 
-        public IProgressOperation? ProgressOperation { get; private set; }
+        public IProgressOperation ProgressOperation { get; private set; }
 
         public bool IsActive { get; private set; }
 
@@ -52,7 +52,7 @@ namespace YoutubeDownloader.ViewModels.Components
 
         public bool IsFailed { get; private set; }
 
-        public string? FailReason { get; private set; }
+        public string FailReason { get; private set; }
 
         public DownloadViewModel(
             IViewModelFactory viewModelFactory,
@@ -122,6 +122,23 @@ namespace YoutubeDownloader.ViewModels.Components
                             _cancellationTokenSource.Token
                         );
 
+                        if (_settingsService.ManualCheckTags && Formats.MusicFormats.Contains(Format))
+                        {
+                            while (RootViewModel.IsBusy)
+                            {
+                                await Task.Delay(25);
+                            }
+                            var dialog = _viewModelFactory.CreateConfirmTagsViewModel(
+                                _settingsService
+                                , _taggingService
+                                , Video
+                                , Format
+                                , newfilepath
+                                , _cancellationTokenSource
+                                );
+                            await _dialogManager.ShowDialogAsync(dialog);
+                        }
+
                         this.FilePath = newfilepath;
                     }
 
@@ -141,6 +158,7 @@ namespace YoutubeDownloader.ViewModels.Components
                         : ex.ToString();
 
                     Debug.WriteLine($"{DateTime.Now} {FileName} {Environment.NewLine}{FailReason}{Environment.NewLine}{ex.StackTrace}");
+
                 }
                 finally
                 {
