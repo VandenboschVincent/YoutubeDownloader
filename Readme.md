@@ -14,6 +14,7 @@ It also supports searching by keywords, which is helpful if you want to quickly 
 - Download individual videos
 - Download videos from playlists, channels, or search
 - Selectable video quality
-- Variety of output formats: mp4, webm, mp3, ogg
+- Variety of output formats: mp4, webm, mp3, ogg, wav
 - Multiple parallel downloads
 - Automatic media tagging
+- Optional: Manual media tagging
