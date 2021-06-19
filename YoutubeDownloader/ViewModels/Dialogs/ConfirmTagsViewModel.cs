@@ -64,8 +64,8 @@ namespace YoutubeDownloader.ViewModels.Dialogs
 
         public async void RefreshOnline()
         {
-            List<string> shazamapikeys = settingsService.FastAPIShazamKeys.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<string> vagalumeapikeys = settingsService.VagalumeAPIKeys.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+            List<string> shazamapikeys = settingsService.FastAPIShazamKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
+            List<string> vagalumeapikeys = settingsService.VagalumeAPIKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
 
             FilePath = await taggingService.InjectAudioTagsAsync(
                 video,

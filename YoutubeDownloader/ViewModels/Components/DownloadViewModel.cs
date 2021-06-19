@@ -109,8 +109,8 @@ namespace YoutubeDownloader.ViewModels.Components
 
                     if (_settingsService.ShouldInjectTags)
                     {
-                        List<string> shazamapikeys = _settingsService.FastAPIShazamKeys.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-                        List<string> vagalumeapikeys = _settingsService.VagalumeAPIKeys.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+                        List<string> shazamapikeys = _settingsService.FastAPIShazamKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
+                        List<string> vagalumeapikeys = _settingsService.VagalumeAPIKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
 
                         var newfilepath = await _taggingService.InjectTagsAsync(
                             Video,
