@@ -22,14 +22,10 @@
 
             <!--  Image of song  -->
             <DockPanel Background="Transparent" LastChildFill="False">
-                <!--<DockPanel.ToolTip>
-                <TextBlock>
-                    <Run Text="Perform automatic updates on every launch" />
-                    <LineBreak />
-                    <Run FontWeight="SemiBold" Text="Warning:" />
-                    <Run Text="disabling this is NOT recommended because the application will stop working when integration with YouTube inevitably breaks in the future" />
-                </TextBlock>
-            </DockPanel.ToolTip>-->
+                <TextBlock
+                    Margin="16,8"
+                    DockPanel.Dock="Left"
+                    Text="{Binding OriginalName}" />
                 <Image
                     Height="100"
                     DockPanel.Dock="Right"
@@ -50,7 +46,7 @@
                 <TextBlock
                     Margin="16,8"
                     DockPanel.Dock="Left"
-                    Text="Name Song" />
+                    Text="Title" />
                 <TextBox
                     MinWidth="170"
                     Margin="16,8"
@@ -73,7 +69,7 @@
                 <TextBlock
                     Margin="16,8"
                     DockPanel.Dock="Left"
-                    Text="Artist Song" />
+                    Text="Artist" />
                 <TextBox
                     MinWidth="170"
                     Margin="16,8"
@@ -97,6 +93,15 @@
                     Margin="16,8"
                     DockPanel.Dock="Left"
                     Text="Refresh Tags Online" />-->
+                <Button
+                    Width="100"
+                    Margin="8"
+                    HorizontalAlignment="Left"
+                    Command="{s:Action ResetTagging}"
+                    Content="Reset"
+                    DockPanel.Dock="Left"
+                    IsDefault="True"
+                    Style="{DynamicResource MaterialDesignFlatButton}" />
                 <Button
                     Width="100"
                     Margin="8"

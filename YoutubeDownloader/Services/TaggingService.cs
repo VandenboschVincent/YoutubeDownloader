@@ -12,6 +12,7 @@ using NAudio.Wave;
 using Newtonsoft.Json.Linq;
 using TagLib;
 using TagLib.Mpeg4;
+using YoutubeDownloader.Utils;
 using YoutubeExplode.Common;
 using YoutubeExplode.Videos;
 using File = TagLib.File;
@@ -160,7 +161,7 @@ namespace YoutubeDownloader.Services
         //    return false;
         //}
 
-        private async Task<string> InjectVideoTagsAsync(
+        private async Task<TaggingSuccesfull> InjectVideoTagsAsync(
             IVideo video,
             string filePath,
             CancellationToken cancellationToken = default)
@@ -180,10 +181,51 @@ namespace YoutubeDownloader.Services
 
             file.Save();
 
-            return filePath;
+            return new TaggingSuccesfull() { FileName = filePath, Succesfull = true };
         }
 
-        public async Task<string> InjectAudioTagsAsync(
+        public async Task<string> ResetTagging(
+            IVideo video,
+            string filePath,
+            string format,
+            CancellationToken cancellationToken = default
+            )
+        {
+            FileInfo info = new FileInfo(filePath);
+            string filetitle;
+
+            var file = File.Create(filePath);
+
+            filetitle = FileNameGenerator.GenerateFileName(
+                FileNameGenerator.DefaultTemplate
+                , video
+                , format);
+
+            file.Tag.Album = null;
+            file.Tag.Performers = new List<string>().ToArray();
+            file.Tag.Title = null;
+            file.Tag.Subtitle = null;
+            file.Tag.Description = null;
+            file.Tag.BeatsPerMinute = 0;
+            file.Tag.Genres = new List<string>().ToArray();
+            file.Tag.Year = 0;
+
+            var picture = await TryGetPictureAsync(video, cancellationToken);
+            IPicture[] pictFrames = new IPicture[1];
+            pictFrames[0] = picture;
+            var picturestoadd = pictFrames;
+
+            file.Tag.Pictures = picturestoadd;
+
+            file.Save();
+            file.Dispose();
+
+            string newfilepath = Path.Combine(info.Directory.FullName, filetitle);
+            info.MoveTo(newfilepath, true);
+            return newfilepath;
+        }
+
+        public async Task<TaggingSuccesfull> InjectAudioTagsAsync(
             IVideo video,
             string filePath,
             string format,
@@ -195,11 +237,17 @@ namespace YoutubeDownloader.Services
             string forceartist = null)
         {
             // 4 requests per second
-            await MaintainRateLimitAsync(TimeSpan.FromSeconds(1.0 / 4), cancellationToken);
+            //await MaintainRateLimitAsync(TimeSpan.FromSeconds(1.0 / 4), cancellationToken);
 
             FileInfo info = new FileInfo(filePath);
-            string filetitle = info.Name;
+            string filetitle = info.Name.Replace(info.Extension, "");
             bool forced = false;
+            string picture = null;
+            var removetitlejunk = new Regex(@"\(([0-9)]*)\)");
+
+            var file = File.Create(filePath);
+
+            double biggestchange = 0;
 
             if (!string.IsNullOrWhiteSpace(forcetitle) || !string.IsNullOrWhiteSpace(forceartist))
             {
@@ -207,80 +255,143 @@ namespace YoutubeDownloader.Services
                 forced = true;
             }
 
-            if (!ShazamMusicInfo.TryExtractArtistAndTitle(filetitle.Replace(info.Extension, "")
+            var searchresponse = await MusicInfo.Search(new DiscogsConnect.SearchCriteria()
+            {
+                Query = filetitle
+                , Title = forcetitle
+                , Artist = forceartist
+            });
+
+            string originalfiletitle = filetitle;
+            file.Tag.Comment = video.Url;
+            forceartist = RemoveDiacritics(forceartist);
+            forcetitle = RemoveDiacritics(forcetitle);
+
+            // releases
+            bool releasesfound = false;
+            var releases = searchresponse.Items.Where(t => t.Type == DiscogsConnect.ResourceType.Release);
+            if (releases //.Where(t => ((DiscogsConnect.ReleaseSearchResult)t).Formats.Contains("Single") || ((DiscogsConnect.ReleaseSearchResult)t).Formats.Contains("File"))
+                .OrderByDescending(
+                t => 
+                    (forced == true ? 
+                    (Convert.ToInt16(RemoveDiacritics(t.Title).Contains(forceartist)) + Convert.ToInt16(RemoveDiacritics(t.Title).Contains(forcetitle))) 
+                    : (LevenshteinDistance.Calculate(t.Title, originalfiletitle) * -1))
+                    + Convert.ToInt16(((DiscogsConnect.ReleaseSearchResult)t).Formats.Contains("Single") || ((DiscogsConnect.ReleaseSearchResult)t).Formats.Contains("File"))
+                )
+                .FirstOrDefault() is DiscogsConnect.ReleaseSearchResult single && single != null)
+            {
+                var diff = LevenshteinDistance.CalculatePercentage(single.Title, originalfiletitle, true);
+                if (diff > biggestchange)
+                    biggestchange = diff;
+                if (diff > 30)
+                {
+                    //var picture = await TryGetPictureAsync(video, cancellationToken, response.Thumb);
+                    picture = single.Thumb;
+
+                    string singlename = removetitlejunk.Replace(single.Title, "");
+                    singlename = singlename.Replace("  ", " ");
+                    //var resolvedArtist = tagsJson?["artist-credit"]?.FirstOrDefault()?["name"]?.Value<string>();
+                    //var resolvedTitle = tagsJson?["title"]?.Value<string>();
+                    //var resolvedAlbumName = track ?? tagsJson?["releases"]?.FirstOrDefault()?["title"]?.Value<string>();
+                    //var releasedate = tagsJson?["first-release-date"]?.Value<string>();
+
+                    var resolvedArtist = singlename.Split(" - ", StringSplitOptions.RemoveEmptyEntries).First();
+                    var resolvedTitle = singlename.Split(" - ", StringSplitOptions.RemoveEmptyEntries).Last();
+
+                    var styles = single.Styles;
+                    var genres = single.Genres;
+
+                    List<string> performers = resolvedArtist.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+                    if (performers.Count < 2)
+                    {
+                        performers = resolvedArtist.Split(" And ", StringSplitOptions.RemoveEmptyEntries).ToList();
+                    }
+                    performers = performers.Select(s => s.Trim()).ToList();
+
+                    file.Tag.Performers = performers.ToArray();
+                    file.Tag.Title = resolvedTitle;
+                    file.Tag.Album = resolvedTitle;
+
+                    if (genres.Any())
+                        file.Tag.Genres = genres.ToArray();
+                    if (styles.Any())
+                        file.Tag.Description = string.Join(", ", styles);
+
+                    filetitle = singlename;
+
+                    releasesfound = true;
+                }
+            }
+
+            //albums
+            bool albumfound = false;
+            if (releases //.Where(t => ((DiscogsConnect.ReleaseSearchResult)t).Formats.Contains("Album"))
+                .OrderByDescending(
+                t =>
+                    (forced == true ?
+                    (Convert.ToInt16(RemoveDiacritics(t.Title).Contains(forceartist)) + Convert.ToInt16(RemoveDiacritics(t.Title).Contains(forcetitle)))
+                    : (LevenshteinDistance.Calculate(t.Title, originalfiletitle) * -1))
+                    + Convert.ToInt16(((DiscogsConnect.ReleaseSearchResult)t).Formats.Contains("Album"))
+                )
+                .FirstOrDefault() is DiscogsConnect.ReleaseSearchResult album && album != null)
+            {
+                var diff = LevenshteinDistance.CalculatePercentage(album.Title, originalfiletitle, true);
+                if (diff > biggestchange)
+                    biggestchange = diff;
+                if (diff > 20)
+                {
+                    string singlename = removetitlejunk.Replace(album.Title, "");
+                    singlename = singlename.Replace("  ", " ");
+
+                    file.Tag.Album = singlename.Split(" - ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+                    var releaseyear = album.Year;
+                    if (releaseyear > 0)
+                        file.Tag.Year = Convert.ToUInt32(releaseyear);
+
+                    picture = album.Thumb;
+
+                    if (!releasesfound)
+                    {
+                        var resolvedArtist = singlename.Split(" - ", StringSplitOptions.RemoveEmptyEntries).First();
+                        List<string> performers = resolvedArtist.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+                        if (performers.Count < 2)
+                        {
+                            performers = resolvedArtist.Split(" And ", StringSplitOptions.RemoveEmptyEntries).ToList();
+                        }
+                        performers = performers.Select(s => s.Trim()).ToList();
+                        file.Tag.Performers = performers.ToArray();
+                        file.Tag.Title = filetitle.Split(" - ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+                    }
+                    albumfound = true;
+                }
+            }
+
+            if((!albumfound && !releasesfound) || biggestchange < 30)
+            {
+                if (ShazamMusicInfo.TryExtractArtistAndTitle(filetitle
                 , shazamapikeys
                 , vagalumeapikeys
                 , out string artist
                 , out string title
                 , out string picturelink
                 , out string track))
-                return filePath;
-
-            bool somethingfound = false;
-            
-            var normalizedartist = RemoveDiacritics(artist);
-            var normalizedtitle = RemoveDiacritics(title);
-            if (!forced)
-            {
-                foreach (var item in filetitle.Replace(info.Extension, "").Split(" "))
                 {
-                    if (string.IsNullOrEmpty(item) || item.Length <= 3)
-                        continue;
-
-                    var normalizeditem = RemoveDiacritics(item);
-
-                    if (string.Equals(normalizeditem, normalizedartist, StringComparison.OrdinalIgnoreCase))
+                    var diff = LevenshteinDistance.CalculatePercentage($"{artist} - {title}", originalfiletitle, true);
+                    if (forced == true ?
+                        RemoveDiacritics(artist).Contains(forceartist) && RemoveDiacritics(title).Contains(forcetitle)
+                        : diff > 30 && diff > biggestchange)
                     {
-                        somethingfound = true;
-                        break;
-                    }
-                    if (string.Equals(normalizeditem, normalizedtitle, StringComparison.OrdinalIgnoreCase))
-                    {
-                        somethingfound = true;
-                        break;
+                        picture = picturelink;
+                        file.Tag.Title = title;
+                        file.Tag.Performers = new string[] { artist };
+                        file.Tag.Album = title;
+
+                        filetitle = $"{artist} - {title}";
+                        releasesfound = true;
                     }
                 }
             }
-
-            if (!somethingfound
-                && (!filetitle.Contains(normalizedartist) || normalizedartist.Length <= 3)
-                && (!filetitle.Contains(normalizedtitle) || normalizedtitle.Length <= 3)
-                && !forced
-                )
-            {
-                var _picture = await TryGetPictureAsync(video, cancellationToken);
-                var _file = File.Create(filePath);
-                IPicture[] _pictFrames = new IPicture[1];
-                _pictFrames[0] = _picture;
-                var _picturestoadd = _pictFrames;
-
-                _file.Tag.Pictures = _picturestoadd;
-
-                _file.Save();
-                _file.Dispose();
-                return filePath;
-            }
-
-            if (forced)
-            {
-                artist = forceartist;
-                title = forcetitle;
-            }
-
-            var tagsJson = await TryGetMusicBrainzTagsJsonAsync(artist!, title!, cancellationToken);
-
-            var picture = await TryGetPictureAsync(video, cancellationToken, picturelink);
-
-            var resolvedArtist = tagsJson?["artist-credit"]?.FirstOrDefault()?["name"]?.Value<string>();
-            var resolvedTitle = tagsJson?["title"]?.Value<string>();
-            var resolvedAlbumName = track ?? tagsJson?["releases"]?.FirstOrDefault()?["title"]?.Value<string>();
-
-            var file = File.Create(filePath);
-
-            file.Tag.Performers = new[] { artist ?? resolvedArtist ?? "" };
-            file.Tag.Title = title ?? resolvedTitle ?? "";
-            file.Tag.Album = resolvedAlbumName ?? "";
-
+            
             //BPMDetector only in 32bit environment
             if (!Environment.Is64BitProcess)
             {
@@ -304,8 +415,9 @@ namespace YoutubeDownloader.Services
                 file.Tag.BeatsPerMinute = Convert.ToUInt32(bpm);
             }
 
+            var pic = await TryGetPictureAsync(video, cancellationToken, picture);
             IPicture[] pictFrames = new IPicture[1];
-            pictFrames[0] = picture;
+            pictFrames[0] = pic;
             var picturestoadd = pictFrames;
 
             file.Tag.Pictures = picturestoadd;
@@ -313,24 +425,33 @@ namespace YoutubeDownloader.Services
             file.Save();
             file.Dispose();
 
-            string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-            var newfilename = $"{artist ?? resolvedArtist} - {title ?? resolvedTitle}";
-            foreach (char c in invalid)
+            if (AutoRename)
             {
-                newfilename = newfilename.Replace(c.ToString(), "");
+                string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                foreach (char c in invalid)
+                {
+                    filetitle = filetitle.Replace(c.ToString(), "");
+                }
+                string newfilepath = Path.Combine(info.Directory.FullName, $"{filetitle}{info.Extension}");
+                                
+                if (FileExistsCaseSensitive(newfilepath))
+                {
+                    var existingfile = File.Create(newfilepath);
+                    if (video.Url != existingfile.Tag.Comment)
+                    {
+                        newfilepath = PathEx.MakeUniqueFilePath(newfilepath);
+                        existingfile.Dispose();
+                    }
+                }
+
+                info.MoveTo(newfilepath, true);
+                return new TaggingSuccesfull() { FileName = newfilepath, Succesfull = albumfound || releasesfound };
             }
 
-            string newfilepath = Path.Combine(info.Directory.FullName, $"{newfilename}{info.Extension}");
-            if ((!System.IO.File.Exists(newfilepath) || forced) && AutoRename)
-            {
-                info.MoveTo(Path.Combine(info.Directory.FullName, $"{newfilename}{info.Extension}"), true);
-                return newfilepath;
-            }
-
-            return filePath;
+            return new TaggingSuccesfull() { FileName = filePath, Succesfull = albumfound || releasesfound };
         }
 
-        public async Task<string> InjectTagsAsync(
+        public async Task<TaggingSuccesfull> InjectTagsAsync(
             IVideo video,
             string format,
             string filePath,
@@ -348,12 +469,14 @@ namespace YoutubeDownloader.Services
                 return await InjectAudioTagsAsync(video, filePath, format, AutoRename, shazamapikeys, vagalumeapikeys, cancellationToken);
             }
 
-            return filePath;
+            return null;
             // Other formats are not supported for tagging
         }
 
         static string RemoveDiacritics(string text)
         {
+            if (string.IsNullOrWhiteSpace(text))
+                return "";
             string formD = text.Normalize(NormalizationForm.FormD);
             StringBuilder sb = new StringBuilder();
 
@@ -368,5 +491,19 @@ namespace YoutubeDownloader.Services
 
             return sb.ToString().Normalize(NormalizationForm.FormC);
         }
+
+        public static bool FileExistsCaseSensitive(string filename)
+        {
+            string name = Path.GetDirectoryName(filename);
+
+            return name != null
+                   && Array.Exists(Directory.GetFiles(name), s => s == Path.GetFullPath(filename));
+        }
+    }
+
+    public class TaggingSuccesfull
+    {
+        public string FileName { get; set; }
+        public bool Succesfull { get; set; }
     }
 }

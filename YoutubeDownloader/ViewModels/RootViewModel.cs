@@ -69,6 +69,8 @@ namespace YoutubeDownloader.ViewModels
                 (_, _) => IsProgressIndeterminate =
                     ProgressManager.IsActive && ProgressManager.Progress.IsEither(0, 1)
             );
+
+            MusicInfo.InitializeDiscog("pKroxZtDUIGhMzqIwYAHXypfcodOQnsZrQOEzuSy", "YoutubeDownloader");
         }
 
         private async Task CheckForUpdatesAsync()
@@ -144,7 +146,7 @@ namespace YoutubeDownloader.ViewModels
         private void EnqueueDownload(DownloadViewModel download)
         {
             // Cancel and remove downloads with the same file path
-            var existingDownloads = Downloads.Where(d => d.FilePath == download.FilePath).ToArray();
+            var existingDownloads = Downloads.Where(d => d.Video.Id == download.Video.Id).ToArray();
             foreach (var existingDownload in existingDownloads)
             {
                 existingDownload.Cancel();
@@ -171,7 +173,7 @@ namespace YoutubeDownloader.ViewModels
             try
             {
                 var parsedQueries = _queryService.ParseMultilineQuery(Query!);
-                var executedQueries = await _queryService.ExecuteQueriesAsync(parsedQueries, operation);
+                var executedQueries = await _queryService.ExecuteQueriesAsync(parsedQueries, _settingsService.ItemCount, operation);
 
                 var videos = executedQueries.SelectMany(q => q.Videos).Distinct(v => v.Id).ToArray();
 

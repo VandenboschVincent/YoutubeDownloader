@@ -17,7 +17,7 @@ namespace YoutubeDownloader.Models
 
     public partial class SubtitleDownloadOption : IEquatable<SubtitleDownloadOption>
     {
-        public bool Equals(SubtitleDownloadOption? other)
+        public bool Equals(SubtitleDownloadOption other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

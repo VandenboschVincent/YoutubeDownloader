@@ -48,6 +48,10 @@ namespace YoutubeDownloader.ViewModels.Dialogs
         public CancellationTokenSource cancellationToken;
         public IVideo video;
         public string format;
+        public bool tagsuccesfull = false;
+
+        private string originalname;
+        public string OriginalName { get => originalname; set => SetAndNotify(ref originalname, value); }
 
         private string songName;
         public string SongName { get => songName; set => SetAndNotify(ref songName, value); }
@@ -62,41 +66,65 @@ namespace YoutubeDownloader.ViewModels.Dialogs
             set => SetAndNotify(ref songimage, value); }
         private BitmapImage songimage;
 
+        public async void ResetTagging()
+        {
+            FilePath = await taggingService.ResetTagging(
+                video,
+                FilePath,
+                format,
+                cancellationToken?.Token ?? new CancellationTokenSource().Token
+            );
+
+            GetFileInfo();
+        }
+
         public async void RefreshOnline()
         {
             List<string> shazamapikeys = settingsService.FastAPIShazamKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
             List<string> vagalumeapikeys = settingsService.VagalumeAPIKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
 
-            FilePath = await taggingService.InjectAudioTagsAsync(
+            var tagging = await taggingService.InjectAudioTagsAsync(
                 video,
                 FilePath,
                 format,
                 settingsService.AutoRenameFile,
                 shazamapikeys,
                 vagalumeapikeys,
-                cancellationToken.Token,
-                songName,
-                artistName
+                cancellationToken?.Token ?? new CancellationTokenSource().Token,
+                string.IsNullOrWhiteSpace(artistName) ? null : songName,
+                string.IsNullOrWhiteSpace(artistName) ? null : artistName
             );
-
+            tagsuccesfull = tagging.Succesfull;
+            FilePath = tagging.FileName;
             GetFileInfo();
         }
 
         public void GetFileInfo()
         {
             var file = File.Create(FilePath);
-            SongName = file.Tag.Title;
-            ArtistName = file.Tag.Performers.FirstOrDefault();
+            var fileinfo = new FileInfo(file.Name);
+
+            OriginalName = video.Title + Environment.NewLine + video.Author.Title;
+            SongName = file.Tag.Title ?? fileinfo.Name.Replace(fileinfo.Extension,"");
+            ArtistName = file.Tag.Performers?.JoinToString(", ");
+
+            if (!string.IsNullOrWhiteSpace(file.Tag.Title))
+                tagsuccesfull = true;
+            else 
+                tagsuccesfull = false;
+
             ExtractImage(file);
             var newdictionary = new Dictionary<string, string>()
             {
                 { "Album", file.Tag.Album }
                 , { "BeatsPerMinute", file.Tag.BeatsPerMinute.ToString() }
-                , { "Genres",file.Tag.Genres.JoinToString(",") }
+                , { "Genres",file.Tag.Genres.JoinToString(", ") }
                 , { "Year" , file.Tag.Year == 0 ? "" : file.Tag.Year.ToString() }
                 , { "Length", file.Properties.Duration.ToString() }
                 , { "AudioBitrate", file.Properties.AudioBitrate.ToString() }
                 , { "AudioSampleRate", file.Properties.AudioSampleRate.ToString() }
+                , { "Description", file.Tag.Description }
+                , { "Performers", file.Tag.Performers?.JoinToString(", ") }
             };
             MyDictionary = newdictionary;
         }
@@ -104,17 +132,20 @@ namespace YoutubeDownloader.ViewModels.Dialogs
         public void ExtractImage(File file)
         {
             // Load you image data in MemoryStream
-            TagLib.IPicture pic = file.Tag.Pictures[0];
-            MemoryStream ms = new MemoryStream(pic.Data.Data);
-            ms.Seek(0, SeekOrigin.Begin);
+            if (file.Tag.Pictures.Any())
+            {
+                TagLib.IPicture pic = file.Tag.Pictures[0];
+                MemoryStream ms = new MemoryStream(pic.Data.Data);
+                ms.Seek(0, SeekOrigin.Begin);
 
-            // ImageSource for System.Windows.Controls.Image
-            BitmapImage bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.StreamSource = ms;
-            bitmap.EndInit();
+                // ImageSource for System.Windows.Controls.Image
+                BitmapImage bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.StreamSource = ms;
+                bitmap.EndInit();
 
-            SongImage = bitmap;
+                SongImage = bitmap;
+            }
         }
     }
 }

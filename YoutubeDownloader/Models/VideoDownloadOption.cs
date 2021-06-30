@@ -40,7 +40,7 @@ namespace YoutubeDownloader.Models
 
     public partial class VideoDownloadOption : IEquatable<VideoDownloadOption>
     {
-        public bool Equals(VideoDownloadOption? other)
+        public bool Equals(VideoDownloadOption other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

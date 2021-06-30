@@ -15,7 +15,7 @@ namespace YoutubeDownloader.Services
 
         private readonly SettingsService _settingsService;
 
-        private Version? _updateVersion;
+        private Version _updateVersion;
         private bool _updatePrepared;
         private bool _updaterLaunched;
 
@@ -24,7 +24,7 @@ namespace YoutubeDownloader.Services
             _settingsService = settingsService;
         }
 
-        public async Task<Version?> CheckForUpdatesAsync()
+        public async Task<Version> CheckForUpdatesAsync()
         {
             if (!_settingsService.IsAutoUpdateEnabled)
                 return null;

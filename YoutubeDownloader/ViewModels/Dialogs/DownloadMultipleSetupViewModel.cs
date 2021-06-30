@@ -94,7 +94,7 @@ namespace YoutubeDownloader.ViewModels.Dialogs
                 // If file exists or is no empty - either skip it or generate a unique file path, depending on user settings
                 var fileInfo = new FileInfo(filePath);
 
-                if (fileInfo.Exists && fileInfo.Length > 0)
+                if (fileInfo.Exists)
                 {
                     if (_settingsService.ShouldSkipExistingFiles)
                         continue;

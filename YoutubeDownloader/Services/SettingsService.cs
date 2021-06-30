@@ -29,6 +29,8 @@ namespace YoutubeDownloader.Services
 
         public int MaxConcurrentDownloadCount { get; set; } = 2;
 
+        public int ItemCount { get; set; } = 50;
+
         public string LastFormat { get; set; }
 
         public string LastSubtitleLanguageCode { get; set; }

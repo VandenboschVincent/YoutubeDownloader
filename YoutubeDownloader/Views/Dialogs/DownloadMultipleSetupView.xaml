@@ -49,7 +49,7 @@
                 ItemsSource="{Binding AvailableVideos}"
                 ScrollViewer.CanContentScroll="False"
                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                SelectionMode="Extended">
+                SelectionMode="Multiple">
                 <i:Interaction.Behaviors>
                     <behaviors:VideoMultiSelectionListBoxBehavior SelectedItems="{Binding SelectedVideos}" />
                 </i:Interaction.Behaviors>

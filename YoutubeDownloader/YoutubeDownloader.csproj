@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>../favicon.ico</ApplicationIcon>
+    <ApplicationIcon>MainIcon.ico</ApplicationIcon>
     <Platforms>AnyCPU;x86</Platforms>
     <Version>2.0.1</Version>
   </PropertyGroup>
@@ -23,14 +23,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="MainIcon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="../favicon.ico" />
+    <Resource Include="MainIcon.ico" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DiscogsConnect" Version="2.1.0" />
     <PackageReference Include="Gress" Version="1.2.0" />
     <PackageReference Include="MaterialDesignColors" Version="2.0.1" />
     <PackageReference Include="MaterialDesignThemes" Version="4.1.0" />
@@ -52,9 +58,6 @@
 
   <ItemGroup>
     <None Update="libzplay.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Pictures\refresh-line.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

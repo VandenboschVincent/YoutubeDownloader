@@ -14,7 +14,7 @@
     d:DataContext="{d:DesignInstance Type=viewModels:RootViewModel}"
     Background="{DynamicResource MaterialDesignBackground}"
     FocusManager.FocusedElement="{Binding ElementName=QueryTextBox}"
-    Icon="/YoutubeDownloader;component/favicon.ico"
+    Icon="/YoutubeDownloader;component/MainIcon.ico"
     Style="{DynamicResource MaterialDesignRoot}"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -162,7 +162,7 @@
                     <!--  Columns  -->
                     <DataGrid.Columns>
                         <!--  Thumbnail  -->
-                        <DataGridTemplateColumn>
+                        <DataGridTemplateColumn MinWidth="70" MaxWidth="70">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type components:DownloadViewModel}">
                                     <Image
@@ -194,6 +194,7 @@
                         <!--  Status  -->
                         <DataGridTemplateColumn
                             MinWidth="100"
+                            MaxWidth="100"
                             Header="Status"
                             SortMemberPath="ProgressOperation.Progress">
                             <DataGridTemplateColumn.CellTemplate>
@@ -279,7 +280,7 @@
                         </DataGridTemplateColumn>
 
                         <!--  Buttons  -->
-                        <DataGridTemplateColumn MinWidth="100">
+                        <DataGridTemplateColumn MinWidth="120" MaxWidth="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type components:DownloadViewModel}">
                                     <StackPanel
@@ -327,6 +328,34 @@
                                                 Width="24"
                                                 Height="24 "
                                                 Kind="FileFindOutline" />
+                                        </Button>
+
+                                        <!--  ReTag file  -->
+                                        <Button
+                                            Padding="4,0,4,0"
+                                            VerticalAlignment="Center"
+                                            Command="{s:Action ReTag}"
+                                            Style="{DynamicResource MaterialDesignFlatButton}"
+                                            ToolTip="ReTag"
+                                            Visibility="{Binding CanReTagUnSuccesfull, Converter={x:Static s:BoolToVisibilityConverter.Instance}}">
+                                            <materialDesign:PackIcon
+                                                Width="24"
+                                                Height="24 "
+                                                Kind="TagOff" />
+                                        </Button>
+
+                                        <!--  ReTag file  -->
+                                        <Button
+                                            Padding="4,0,4,0"
+                                            VerticalAlignment="Center"
+                                            Command="{s:Action ReTag}"
+                                            Style="{DynamicResource MaterialDesignFlatButton}"
+                                            ToolTip="ReTag"
+                                            Visibility="{Binding CanReTagSuccesfull, Converter={x:Static s:BoolToVisibilityConverter.Instance}}">
+                                            <materialDesign:PackIcon
+                                                Width="24"
+                                                Height="24 "
+                                                Kind="tag" />
                                         </Button>
 
                                         <!--  Open file  -->

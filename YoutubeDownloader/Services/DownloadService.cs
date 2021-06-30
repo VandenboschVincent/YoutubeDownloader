@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using YoutubeDownloader.Converters;
@@ -15,7 +17,7 @@ namespace YoutubeDownloader.Services
 {
     public class DownloadService
     {
-        private readonly YoutubeClient _youtube = new();
+        private YoutubeClient _youtube = new();
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         private readonly SettingsService _settingsService;
@@ -47,9 +49,9 @@ namespace YoutubeDownloader.Services
 
         public async Task DownloadAsync(
             VideoDownloadOption videoDownloadOption,
-            SubtitleDownloadOption? subtitleDownloadOption,
+            SubtitleDownloadOption subtitleDownloadOption,
             string filePath,
-            IProgress<double>? progress = null,
+            IProgress<double> progress = null,
             CancellationToken cancellationToken = default)
         {
             await EnsureThrottlingAsync(cancellationToken);
@@ -81,6 +83,18 @@ namespace YoutubeDownloader.Services
                     );
                 }
             }
+            catch (WebException ex)
+            {
+                if (_concurrentDownloadCount == 1)
+                {
+                    _youtube = new YoutubeClient();
+                }
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
             finally
             {
                 Interlocked.Decrement(ref _concurrentDownloadCount);
@@ -89,69 +103,92 @@ namespace YoutubeDownloader.Services
 
         public async Task<IReadOnlyList<VideoDownloadOption>> GetVideoDownloadOptionsAsync(string videoId)
         {
-            var streamManifest = await _youtube.Videos.Streams.GetManifestAsync(videoId);
-
-            // Using a set ensures only one download option per format/quality is provided
-            var options = new HashSet<VideoDownloadOption>();
-
-            // Video+audio options
-            var videoStreams = streamManifest
-                .GetVideoStreams()
-                .OrderByDescending(v => v.VideoQuality);
-
-            foreach (var streamInfo in videoStreams)
+            try
             {
-                var format = streamInfo.Container.Name;
-                var label = streamInfo.VideoQuality.Label;
+                var streamManifest = await _youtube.Videos.Streams.GetManifestAsync(videoId);
 
-                // Muxed streams are standalone
-                if (streamInfo is MuxedStreamInfo)
+                // Using a set ensures only one download option per format/quality is provided
+                var options = new HashSet<VideoDownloadOption>();
+
+                // Video+audio options
+                var videoStreams = streamManifest
+                    .GetVideoStreams()
+                    .OrderByDescending(v => v.VideoQuality);
+
+                foreach (var streamInfo in videoStreams)
                 {
-                    options.Add(new VideoDownloadOption(format, label, streamInfo));
-                    continue;
+                    var format = streamInfo.Container.Name;
+                    var label = streamInfo.VideoQuality.Label;
+
+                    // Muxed streams are standalone
+                    if (streamInfo is MuxedStreamInfo)
+                    {
+                        options.Add(new VideoDownloadOption(format, label, streamInfo));
+                        continue;
+                    }
+
+                    // Get audio with matching format, if possible
+                    var audioStreamInfo =
+                        (IStreamInfo)
+                        streamManifest
+                            .GetAudioOnlyStreams()
+                            .OrderByDescending(s => s.Container == streamInfo.Container)
+                            .ThenByDescending(s => s.Bitrate)
+                            .FirstOrDefault() ??
+                        streamManifest
+                            .GetMuxedStreams()
+                            .OrderByDescending(s => s.Container == streamInfo.Container)
+                            .ThenByDescending(s => s.Bitrate)
+                            .FirstOrDefault();
+
+                    if (audioStreamInfo is not null)
+                    {
+                        options.Add(new VideoDownloadOption(format, label, streamInfo, audioStreamInfo));
+                    }
                 }
 
-                // Get audio with matching format, if possible
-                var audioStreamInfo =
-                    (IStreamInfo?)
-                    streamManifest
-                        .GetAudioOnlyStreams()
-                        .OrderByDescending(s => s.Container == streamInfo.Container)
-                        .ThenByDescending(s => s.Bitrate)
-                        .FirstOrDefault() ??
-                    streamManifest
-                        .GetMuxedStreams()
-                        .OrderByDescending(s => s.Container == streamInfo.Container)
-                        .ThenByDescending(s => s.Bitrate)
-                        .FirstOrDefault();
+                // Audio-only options
+                var bestAudioOnlyStreamInfo = streamManifest
+                    .GetAudioOnlyStreams()
+                    .OrderByDescending(s => s.Container == Container.WebM)
+                    .ThenByDescending(s => s.Bitrate)
+                    .FirstOrDefault();
 
-                if (audioStreamInfo is not null)
+                if (bestAudioOnlyStreamInfo is not null)
                 {
-                    options.Add(new VideoDownloadOption(format, label, streamInfo, audioStreamInfo));
+                    Formats.MusicFormats.ForEach(t => options.Add(new VideoDownloadOption(t, "Audio", bestAudioOnlyStreamInfo)));
                 }
+
+                // Drop excluded formats
+                if (_settingsService.ExcludedContainerFormats is not null)
+                {
+                    options.RemoveWhere(o =>
+                        _settingsService.ExcludedContainerFormats.Contains(o.Format, StringComparer.OrdinalIgnoreCase)
+                    );
+                }
+
+                return options.ToArray();
             }
-
-            // Audio-only options
-            var bestAudioOnlyStreamInfo = streamManifest
-                .GetAudioOnlyStreams()
-                .OrderByDescending(s => s.Container == Container.WebM)
-                .ThenByDescending(s => s.Bitrate)
-                .FirstOrDefault();
-
-            if (bestAudioOnlyStreamInfo is not null)
+            catch (HttpRequestException ex)
             {
-                Formats.MusicFormats.ForEach(t => options.Add(new VideoDownloadOption(t, "Audio", bestAudioOnlyStreamInfo)));
+                if (_concurrentDownloadCount == 1)
+                {
+                    _youtube = new YoutubeClient();
+                }
+                throw ex;
             }
-
-            // Drop excluded formats
-            if (_settingsService.ExcludedContainerFormats is not null)
+            catch (WebException ex)
             {
-                options.RemoveWhere(o =>
-                    _settingsService.ExcludedContainerFormats.Contains(o.Format, StringComparer.OrdinalIgnoreCase)
-                );
+                if (_concurrentDownloadCount == 1)
+                {
+                    _youtube = new YoutubeClient();
+                }
+                throw ex;
             }
-
-            return options.ToArray();
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         public async Task<IReadOnlyList<SubtitleDownloadOption>> GetSubtitleDownloadOptionsAsync(string videoId)

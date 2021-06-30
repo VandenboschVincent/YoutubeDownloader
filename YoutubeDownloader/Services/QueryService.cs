@@ -49,7 +49,7 @@ namespace YoutubeDownloader.Services
         public IReadOnlyList<Query> ParseMultilineQuery(string query) =>
             query.Split(Environment.NewLine).Select(ParseQuery).ToArray();
 
-        public async Task<ExecutedQuery> ExecuteQueryAsync(Query query)
+        public async Task<ExecutedQuery> ExecuteQueryAsync(Query query, int itemcount)
         {
             // Video
             if (query.Kind == QueryKind.Video)
@@ -80,7 +80,7 @@ namespace YoutubeDownloader.Services
             // Search
             if (query.Kind == QueryKind.Search)
             {
-                var videos = await _youtube.Search.GetVideosAsync(query.Value).CollectAsync(100);
+                var videos = await _youtube.Search.GetVideosAsync(query.Value).CollectAsync(itemcount);
 
                 return new ExecutedQuery(query, $"Search: {query.Value}", videos);
             }
@@ -90,13 +90,14 @@ namespace YoutubeDownloader.Services
 
         public async Task<IReadOnlyList<ExecutedQuery>> ExecuteQueriesAsync(
             IReadOnlyList<Query> queries,
-            IProgress<double>? progress = null)
+            int itemcount,
+            IProgress<double> progress = null)
         {
             var result = new List<ExecutedQuery>(queries.Count);
 
             for (var i = 0; i < queries.Count; i++)
             {
-                var executedQuery = await ExecuteQueryAsync(queries[i]);
+                var executedQuery = await ExecuteQueryAsync(queries[i], itemcount);
                 result.Add(executedQuery);
 
                 progress?.Report((i + 1.0) / queries.Count);

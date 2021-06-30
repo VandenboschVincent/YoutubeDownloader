@@ -7,13 +7,14 @@
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:s="https://github.com/canton7/Stylet"
+    xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
     MinWidth="400"
-    MinHeight="600"
+    MinHeight="450"
     d:DataContext="{d:DesignInstance Type=dialogs:SettingsViewModel}"
     d:DesignWidth="400"
     Style="{DynamicResource MaterialDesignRoot}"
     mc:Ignorable="d">
-    <StackPanel>
+    <StackPanel CanVerticallyScroll="True">
         <TextBlock
             Margin="16"
             FontSize="17"
@@ -153,6 +154,7 @@
         </TextBox>
 
         <!--  Shazam api keys  -->
+        <!--
         <TextBox
             Margin="16,8"
             materialDesign:HintAssist.Hint="Shazam api keys: https://rapidapi.com/"
@@ -172,7 +174,9 @@
             </TextBox.ToolTip>
         </TextBox>
 
+        -->
         <!--  Vagalume api keys  -->
+        <!--
         <TextBox
             Margin="16,8"
             materialDesign:HintAssist.Hint="Vagalume api keys: https://api.vagalume.com.br/"
@@ -190,7 +194,7 @@
                     <Run Text="Seperate by newline!" />
                 </TextBlock>
             </TextBox.ToolTip>
-        </TextBox>
+        </TextBox>-->
 
         <!--  Excluded container formats  -->
         <TextBox
@@ -221,6 +225,21 @@
                 Minimum="1"
                 TickFrequency="1"
                 Value="{Binding MaxConcurrentDownloads}" />
+        </StackPanel>
+
+        <!--  ItemCount  -->
+        <StackPanel Background="Transparent" ToolTip="How many items will load after search.">
+            <TextBlock Margin="16,8,16,4">
+                <Run Text="Page count:" />
+                <Run FontWeight="DemiBold" Text="{Binding ItemCount, Mode=OneWay}" />
+            </TextBlock>
+            <Slider
+                Margin="16,4,16,8"
+                IsSnapToTickEnabled="True"
+                Maximum="200"
+                Minimum="10"
+                TickFrequency="10"
+                Value="{Binding ItemCount}" />
         </StackPanel>
 
         <!--  Save button  -->

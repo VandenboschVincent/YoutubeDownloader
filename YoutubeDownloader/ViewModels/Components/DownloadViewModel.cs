@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Gress;
@@ -30,7 +32,7 @@ namespace YoutubeDownloader.ViewModels.Components
 
         public string FilePath { get; set; } = default!;
 
-        public string FileName => Path.GetFileName(FilePath);
+        public string FileName => Path.GetFileName(FilePath).Replace("." + Format,"");
 
         public string Format { get; set; } = default!;
 
@@ -53,6 +55,8 @@ namespace YoutubeDownloader.ViewModels.Components
         public bool IsFailed { get; private set; }
 
         public string FailReason { get; private set; }
+
+        public bool TaggingSuccesfull { get; private set; }
 
         public DownloadViewModel(
             IViewModelFactory viewModelFactory,
@@ -112,7 +116,7 @@ namespace YoutubeDownloader.ViewModels.Components
                         List<string> shazamapikeys = _settingsService.FastAPIShazamKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
                         List<string> vagalumeapikeys = _settingsService.VagalumeAPIKeys?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
 
-                        var newfilepath = await _taggingService.InjectTagsAsync(
+                        var taggingsuccesfull = await _taggingService.InjectTagsAsync(
                             Video,
                             Format,
                             FilePath,
@@ -121,6 +125,7 @@ namespace YoutubeDownloader.ViewModels.Components
                             vagalumeapikeys,
                             _cancellationTokenSource.Token
                         );
+                        TaggingSuccesfull = taggingsuccesfull.Succesfull;
 
                         if (_settingsService.ManualCheckTags && Formats.MusicFormats.Contains(Format))
                         {
@@ -133,13 +138,16 @@ namespace YoutubeDownloader.ViewModels.Components
                                 , _taggingService
                                 , Video
                                 , Format
-                                , newfilepath
+                                , taggingsuccesfull.FileName
                                 , _cancellationTokenSource
                                 );
                             await _dialogManager.ShowDialogAsync(dialog);
+                            
+                            TaggingSuccesfull = dialog.tagsuccesfull;
+                            taggingsuccesfull.FileName = dialog.FilePath;
                         }
 
-                        this.FilePath = newfilepath;
+                        this.FilePath = taggingsuccesfull.FileName;
                     }
 
                     IsSuccessful = true;
@@ -202,6 +210,39 @@ namespace YoutubeDownloader.ViewModels.Components
             }
         }
 
+        public async void ReTag()
+        {
+            if (!CanShowFile)
+                return;
+
+            try
+            {
+                while (RootViewModel.IsBusy)
+                {
+                    await Task.Delay(25);
+                }
+
+                var dialog = _viewModelFactory.CreateConfirmTagsViewModel(
+                    _settingsService
+                    , _taggingService
+                    , Video
+                    , Format
+                    , this.FilePath
+                    , _cancellationTokenSource
+                    );
+
+                await _dialogManager.ShowDialogAsync(dialog);
+
+                this.FilePath = dialog.FilePath;
+                this.TaggingSuccesfull = dialog.tagsuccesfull;
+            }
+            catch (Exception ex)
+            {
+                var dialog = _viewModelFactory.CreateMessageBoxViewModel("Error", ex.Message);
+                await _dialogManager.ShowDialogAsync(dialog);
+            }
+        }
+
         public bool CanOpenFile => IsSuccessful;
 
         public async void OpenFile()
@@ -221,8 +262,9 @@ namespace YoutubeDownloader.ViewModels.Components
         }
 
         public bool CanRestart => CanStart && !IsSuccessful;
-
         public void Restart() => Start();
+        public bool CanReTagUnSuccesfull => CanOpenFile && !TaggingSuccesfull && Formats.MusicFormats.Contains(Format);
+        public bool CanReTagSuccesfull => CanOpenFile && TaggingSuccesfull && Formats.MusicFormats.Contains(Format);
     }
 
     public static class DownloadViewModelExtensions
@@ -233,7 +275,7 @@ namespace YoutubeDownloader.ViewModels.Components
             string filePath,
             string format,
             VideoDownloadOption videoOption,
-            SubtitleDownloadOption? subtitleOption)
+            SubtitleDownloadOption subtitleOption)
         {
             var viewModel = factory.CreateDownloadViewModel();
 
